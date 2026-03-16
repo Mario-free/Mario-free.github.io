@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Mario Engine</title>
+<style>
+    body { margin: 0; overflow: hidden; background: #87CEEB; }
+    canvas { background: #87CEEB; display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="900" height="500"></canvas>
+
+<script>
+// =========================
+// BASIC SETUP
+// =========================
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// =========================
+// PLAYER
+// =========================
+let player = {
+    x: 100,
+    y: 100,
+    w: 40,
+    h: 50,
+    xVel: 0,
+    yVel: 0,
+    speed: 4,
+    jumping: false
+};
+
+// =========================
+// PLATFORMS
+// =========================
+let platforms = [
+    {x: 0, y: 450, w: 900, h: 50},
+    {x: 200, y: 350, w: 150, h: 20},
+    {x: 450, y: 300, w: 150, h: 20},
+    {x: 700, y: 250, w: 150, h: 20}
+];
+
+// =========================
+// COINS
+// =========================
+let coins = [
+    {x: 230, y: 310, r: 10, collected: false},
+    {x: 480, y: 260, r: 10, collected: false},
+    {x: 730, y: 210, r: 10, collected: false}
+];
+
+let coinCount = 0;
+
+// =========================
+// FLAG (LEVEL END)
+// =========================
+let flag = { x: 820, y: 150, w: 20, h: 300 };
+
+// =========================
+// GAME LOOP
+// =========================
+function update() {
+    // Horizontal movement
+    if (keys["ArrowRight"]) player.xVel = player.speed;
+    else if (keys["ArrowLeft"]) player.xVel = -player.speed;
+    else player.xVel = 0;
+
+    // Jump
+    if (keys[" "] || keys["ArrowUp"]) {
+        if (!player.jumping) {
+            player.yVel = -12;
+            player.jumping = true;
+        }
+    }
+
+    // Gravity
+    player.yVel += 0.5;
+
+    // Apply movement
+    player.x += player.xVel;
+    player.y += player.yVel;
+
+    // Collision with platforms
+    platforms.forEach(p => {
+        if (player.x < p.x + p.w &&
+            player.x + player.w > p.x &&
+            player.y < p.y + p.h &&
+            player.y + player.h > p.y) {
+
+            // Land on top
+            if (player.yVel > 0) {
+                player.y = p.y - player.h;
+                player.yVel = 0;
+                player.jumping = false;
+            }
+        }
+    });
+
+    // Coin collection
+    coins.forEach(c => {
+        if (!c.collected) {
+            let dx = (player.x + player.w/2) - c.x;
+            let dy = (player.y + player.h/2) - c.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 30) {
+                c.collected = true;
+                coinCount++;
+            }
+        }
+    });
+
+    // Check flag (win)
+    if (player.x + player.w > flag.x && player.y < flag.y + flag.h) {
+        alert("🎉 YOU WIN! Coins: " + coinCount);
+        location.reload();
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+// =========================
+// DRAW EVERYTHING
+// =========================
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Player
+    ctx.fillStyle = "red";
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    // Platforms
+    ctx.fillStyle = "green";
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+    });
+
+    // Coins
+    ctx.fillStyle = "gold";
+    coins.forEach(c => {
+        if (!c.collected) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    // Flag
+    ctx.fillStyle = "white";
+    ctx.fillRect(flag.x, flag.y, flag.w, flag.h);
+}
+
+update();
+</script>
+
+</body>
+</html>
